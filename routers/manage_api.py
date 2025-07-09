@@ -83,18 +83,20 @@ def add_user(
     return f"Đã thêm nhân viên: {name}"
 
 @router.post("/admin/add-product", response_class=PlainTextResponse)
-def add_product(name: str = Body(...), db: Session = Depends(get_db)):
-    new_product = Product(id=str(uuid.uuid4()), name=name)
+def add_product(product: ProductCreate, db: Session = Depends(get_db)):
+    new_product = Product(id=str(uuid.uuid4()), name=product.name)
     db.add(new_product)
     db.commit()
-    return f"Đã thêm sản phẩm: {name}"
+    return f"Đã thêm sản phẩm: {product.name}"
+
 
 @router.post("/admin/add-machine", response_class=PlainTextResponse)
-def add_machine(name: str = Body(...), db: Session = Depends(get_db)):
-    new_machine = Machine(id=str(uuid.uuid4()), name=name)
+def add_machine(machine: MachineCreate, db: Session = Depends(get_db)):
+    new_machine = Machine(id=str(uuid.uuid4()), name=machine.name)
     db.add(new_machine)
     db.commit()
-    return f"Đã thêm máy: {name}"
+    return f"Đã thêm máy: {machine.name}"
+
 
 @router.post("/admin/import-users", response_class=PlainTextResponse)
 def import_users(file: UploadFile, db: Session = Depends(get_db)):
