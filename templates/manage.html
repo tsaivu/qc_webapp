@@ -1,0 +1,173 @@
+<!DOCTYPE html>
+<html lang="vi">
+<head>
+  <meta charset="UTF-8">
+  <title>Quản lý kiểm tra chất lượng</title>
+  <link rel="stylesheet" href="/static/style.css">
+  <style>
+    body {
+      font-family: 'Segoe UI', sans-serif;
+      padding: 24px;
+      background: #f4f6f8;
+    }
+    h2 {
+      text-align: center;
+      color: #2c3e50;
+    }
+    table {
+      width: 100%;
+      border-collapse: collapse;
+      margin-top: 20px;
+      background: white;
+    }
+    th, td {
+      padding: 12px;
+      border: 1px solid #ccc;
+      text-align: left;
+    }
+    th {
+      background-color: #e0e0e0;
+    }
+    img {
+      max-width: 120px;
+      border-radius: 6px;
+    }
+  </style>
+</head>
+<body>
+  <h2>Danh sách kiểm tra chất lượng</h2>
+  <div class="filter-form">
+    Từ ngày: <input type="date" id="fromDate">
+    Đến ngày: <input type="date" id="toDate">
+    <button onclick="setToday()">Hôm nay</button>
+	<button onclick="setYesterday()">Hôm qua</button>
+	<button onclick="setThisWeek()">Tuần này</button>
+	<button onclick="setLastWeek()">Tuần trước</button>
+
+    Nhân viên:
+    <select id="userFilter"><option value="">Tất cả</option></select>
+
+    Máy:
+    <select id="machineFilter"><option value="">Tất cả</option></select>
+
+    Sản phẩm:
+    <select id="productFilter"><option value="">Tất cả</option></select>
+
+    <button onclick="applyFilters()">Lọc</button>
+  </div>
+
+  <table>
+    <thead>
+      <tr>
+        <th>Thời gian</th>
+        <th>Nhân viên</th>
+        <th>Máy</th>
+        <th>Sản phẩm</th>
+        <th>Ảnh</th>
+      </tr>
+    </thead>
+    <tbody id="qcTableBody">
+      <!-- Dữ liệu sẽ được thêm ở đây -->
+    </tbody>
+  </table>
+
+  <script>
+    let allData = [];
+	
+	function setYesterday() {
+  const d = new Date();
+  d.setDate(d.getDate() - 1);
+  const yesterday = d.toISOString().split("T")[0];
+  document.getElementById("fromDate").value = yesterday;
+  document.getElementById("toDate").value = yesterday;
+  applyFilters();
+}
+
+    function setToday() {
+      const today = new Date().toISOString().split("T")[0];
+      document.getElementById("fromDate").value = today;
+      document.getElementById("toDate").value = today;
+      applyFilters();
+    }
+
+    function setThisWeek() {
+      const now = new Date();
+      const firstDay = new Date(now);
+      firstDay.setDate(now.getDate() - now.getDay() + 1); // Monday
+      const lastDay = new Date(firstDay);
+      lastDay.setDate(firstDay.getDate() + 6); // Sunday
+
+      document.getElementById("fromDate").value = firstDay.toISOString().split("T")[0];
+      document.getElementById("toDate").value = lastDay.toISOString().split("T")[0];
+      applyFilters();
+    }
+
+    function setLastWeek() {
+      const now = new Date();
+      const lastWeekStart = new Date(now);
+      lastWeekStart.setDate(now.getDate() - now.getDay() - 6); // Monday last week
+      const lastWeekEnd = new Date(lastWeekStart);
+      lastWeekEnd.setDate(lastWeekStart.getDate() + 6); // Sunday last week
+
+      document.getElementById("fromDate").value = lastWeekStart.toISOString().split("T")[0];
+      document.getElementById("toDate").value = lastWeekEnd.toISOString().split("T")[0];
+      applyFilters();
+    }
+
+    function populateSelect(id, values) {
+      const select = document.getElementById(id);
+      const unique = [...new Set(values)];
+      unique.sort();
+      select.innerHTML = `<option value="">Tất cả</option>` + unique.map(v => `<option>${v}</option>`).join("");
+    }
+
+    function applyFilters() {
+      const fromInput = document.getElementById("fromDate").value;
+      const toInput = document.getElementById("toDate").value;
+      const from = fromInput ? new Date(fromInput + "T00:00:00") : new Date("1970-01-01T00:00:00");
+      const to = toInput ? new Date(toInput + "T23:59:59") : new Date("2999-12-31T23:59:59");
+
+      const user = document.getElementById("userFilter").value;
+      const machine = document.getElementById("machineFilter").value;
+      const product = document.getElementById("productFilter").value;
+
+      const tbody = document.getElementById("qcTableBody");
+      tbody.innerHTML = "";
+
+      const filtered = allData.filter(item => {
+        const t = new Date(item.timestamp);
+        return (!user || item.user_name === user) &&
+               (!machine || item.machine_name === machine) &&
+               (!product || item.product_name === product) &&
+               t >= from && t <= to;
+      });
+
+      filtered.forEach(item => {
+        const row = document.createElement("tr");
+        const t = new Date(item.timestamp);
+        row.innerHTML = `
+          <td>${t.toLocaleString("vi-VN", { timeZone: "Asia/Ho_Chi_Minh", hour12: false })}</td>
+          <td>${item.user_name}</td>
+          <td>${item.machine_name}</td>
+          <td>${item.product_name}</td>
+          <td><img class="qc-img" src="${item.image_path}" /></td>
+        `;
+        tbody.appendChild(row);
+      });
+    }
+
+    // Load initial data
+    fetch("/api/qc-checks")
+      .then(res => res.json())
+      .then(data => {
+        allData = data;
+        applyFilters();
+
+        populateSelect("userFilter", allData.map(i => i.user_name));
+        populateSelect("machineFilter", allData.map(i => i.machine_name));
+        populateSelect("productFilter", allData.map(i => i.product_name));
+      });
+  </script>
+
+</body>
+</html>

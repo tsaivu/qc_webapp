@@ -1,0 +1,269 @@
+<!DOCTYPE html>
+<html lang="vi">
+<head>
+  <meta charset="UTF-8">
+  <title>Quản trị hệ thống QC</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css">
+</head>
+<body class="bg-light p-4">
+
+  <div class="container">
+    <h2 class="mb-4">🛠 Trang quản trị hệ thống QC</h2>
+
+    <!-- XÓA DỮ LIỆU -->
+    <div class="card mb-4">
+      <div class="card-header bg-danger text-white">Xóa dữ liệu QC trong khoảng thời gian</div>
+      <div class="card-body">
+        <form id="delete-form">
+          <div class="row g-3">
+            <div class="col-md-6">
+              <label class="form-label">Từ ngày:</label>
+              <input type="datetime-local" class="form-control" id="delete-start" required>
+            </div>
+            <div class="col-md-6">
+              <label class="form-label">Đến ngày:</label>
+              <input type="datetime-local" class="form-control" id="delete-end" required>
+            </div>
+          </div>
+          <button type="submit" class="btn btn-danger mt-3">Xóa dữ liệu</button>
+        </form>
+      </div>
+    </div>
+
+    <!-- NHÂN VIÊN -->
+    <div class="card mb-4">
+      <div class="card-header bg-primary text-white">Nhân viên</div>
+      <div class="card-body">
+        <form id="user-form">
+          <div class="row g-3">
+            <div class="col-md-4">
+              <label class="form-label">Tên nhân viên:</label>
+              <input type="text" class="form-control" id="user-name" required>
+            </div>
+            <div class="col-md-4">
+              <label class="form-label">Mật khẩu:</label>
+              <input type="password" class="form-control" id="user-pass" required>
+            </div>
+            <div class="col-md-2">
+              <label class="form-label">Bộ phận:</label>
+              <select class="form-select" id="user-dept">
+                <option>Trộn</option>
+                <option>Thổi/In</option>
+                <option>Cắt</option>
+              </select>
+            </div>
+            <div class="col-md-2">
+              <label class="form-label">Vai trò:</label>
+              <select class="form-select" id="user-role">
+                <option>nhanvien</option>
+                <option>qc</option>
+                <option>quanly</option>
+                <option>admin</option>
+              </select>
+            </div>
+          </div>
+          <div class="d-flex align-items-center mt-3">
+            <button type="submit" class="btn btn-success me-3">Tạo nhân viên</button>
+            <input type="file" id="import-users-file" accept=".csv" class="form-control w-auto me-2">
+            <button id="import-users-btn" class="btn btn-warning" type="button">📥 Import CSV</button>
+          </div>
+        </form>
+      </div>
+    </div>
+
+    <!-- SẢN PHẨM -->
+    <div class="card mb-4">
+      <div class="card-header bg-success text-white">Sản phẩm</div>
+      <div class="card-body">
+        <form id="product-form">
+          <div class="row g-3 align-items-end">
+            <div class="col-md-6">
+              <label class="form-label">Tên sản phẩm:</label>
+              <input type="text" class="form-control" id="product-name" required>
+            </div>
+            <div class="col-md-6 d-flex">
+              <button type="submit" class="btn btn-success me-3">Tạo sản phẩm</button>
+              <input type="file" id="import-products-file" accept=".csv" class="form-control w-auto me-2">
+              <button id="import-products-btn" class="btn btn-info" type="button">📥 Import CSV</button>
+            </div>
+          </div>
+        </form>
+      </div>
+    </div>
+
+    <!-- MÁY -->
+    <div class="card mb-5">
+      <div class="card-header bg-secondary text-white">Máy</div>
+      <div class="card-body">
+        <form id="machine-form">
+          <div class="row g-3 align-items-end">
+            <div class="col-md-6">
+              <label class="form-label">Tên máy:</label>
+              <input type="text" class="form-control" id="machine-name" required>
+            </div>
+            <div class="col-md-6 d-flex">
+              <button type="submit" class="btn btn-secondary me-3">Tạo máy</button>
+              <input type="file" id="import-machines-file" accept=".csv" class="form-control w-auto me-2">
+              <button id="import-machines-btn" class="btn btn-dark" type="button">📥 Import CSV</button>
+            </div>
+          </div>
+        </form>
+      </div>
+    </div>
+
+  </div>
+
+  <!-- SCRIPT -->
+  <script>
+    // XÓA QC
+    document.getElementById('delete-form').onsubmit = async (e) => {
+      e.preventDefault();
+      const res = await fetch('/admin/delete-qc-data', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          start: document.getElementById('delete-start').value,
+          end: document.getElementById('delete-end').value
+        })
+      });
+      alert(await res.text());
+    };
+
+    // TẠO NHÂN VIÊN
+    document.getElementById('user-form').onsubmit = async (e) => {
+      e.preventDefault();
+      const res = await fetch('/admin/add-user', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          name: document.getElementById('user-name').value,
+          password: document.getElementById('user-pass').value,
+          department: document.getElementById('user-dept').value,
+          role: document.getElementById('user-role').value
+        })
+      });
+      alert(await res.text());
+    };
+
+    // IMPORT NHÂN VIÊN
+document.getElementById('import-users-btn').onclick = async () => {
+  const fileInput = document.getElementById('import-users-file');
+  const file = fileInput.files[0];
+
+  if (!file) {
+    alert("Vui lòng chọn file CSV trước khi import.");
+    return;
+  }
+
+  const formData = new FormData();
+  formData.append("file", file);
+
+  try {
+    const res = await fetch('/admin/import-users', {
+      method: 'POST',
+      body: formData
+    });
+
+    if (!res.ok) {
+      const errText = await res.text();
+      throw new Error(`${res.status}: ${errText}`);
+    }
+
+    const result = await res.text();
+    alert(result);
+  } catch (err) {
+    alert("Lỗi khi import: " + err.message);
+  }
+};
+
+
+    // TẠO SẢN PHẨM
+    document.getElementById('product-form').onsubmit = async (e) => {
+      e.preventDefault();
+      const res = await fetch('/admin/add-product', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ name: document.getElementById('product-name').value })
+      });
+      alert(await res.text());
+    };
+
+    // IMPORT SẢN PHẨM
+document.getElementById('import-products-btn').onclick = async () => {
+  const fileInput = document.getElementById('import-products-file');
+  const file = fileInput.files[0];
+
+  if (!file) {
+    alert("Vui lòng chọn file CSV trước khi import.");
+    return;
+  }
+
+  const formData = new FormData();
+  formData.append("file", file);
+
+  try {
+    const res = await fetch('/admin/import-products', {
+      method: 'POST',
+      body: formData
+    });
+
+    if (!res.ok) {
+      const errText = await res.text();
+      throw new Error(`${res.status}: ${errText}`);
+    }
+
+    const result = await res.text();
+    alert(result);
+  } catch (err) {
+    alert("Lỗi khi import: " + err.message);
+  }
+};
+
+
+    // TẠO MÁY
+    document.getElementById('machine-form').onsubmit = async (e) => {
+      e.preventDefault();
+      const res = await fetch('/admin/add-machine', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ name: document.getElementById('machine-name').value })
+      });
+      alert(await res.text());
+    };
+
+    // IMPORT MÁY
+document.getElementById('import-machines-btn').onclick = async () => {
+  const fileInput = document.getElementById('import-machines-file');
+  const file = fileInput.files[0];
+
+  if (!file) {
+    alert("Vui lòng chọn file CSV trước khi import.");
+    return;
+  }
+
+  const formData = new FormData();
+  formData.append("file", file);
+
+  try {
+    const res = await fetch('/admin/import-machines', {
+      method: 'POST',
+      body: formData
+    });
+
+    if (!res.ok) {
+      const errText = await res.text();
+      throw new Error(`${res.status}: ${errText}`);
+    }
+
+    const result = await res.text();
+    alert(result);
+  } catch (err) {
+    alert("Lỗi khi import: " + err.message);
+  }
+};
+
+  </script>
+
+</body>
+</html>

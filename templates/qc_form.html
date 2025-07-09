@@ -1,0 +1,254 @@
+<!DOCTYPE html>
+<html lang="vi">
+<head>
+  <meta charset="UTF-8">
+  <title>QC Kiểm Tra</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+
+  <!-- Font + Select2 -->
+  <link href="https://fonts.googleapis.com/css2?family=Roboto&display=swap" rel="stylesheet">
+  <script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
+  <link href="https://cdn.jsdelivr.net/npm/select2@4.1.0-rc.0/dist/css/select2.min.css" rel="stylesheet" />
+  <script src="https://cdn.jsdelivr.net/npm/select2@4.1.0-rc.0/dist/js/select2.min.js"></script>
+
+  <!-- PWA -->
+  <meta name="apple-mobile-web-app-capable" content="yes">
+  <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+  <meta name="mobile-web-app-capable" content="yes">
+  <link rel="manifest" href="/static/manifest.json">
+
+
+  <style>
+    body {
+      font-family: 'Roboto', sans-serif;
+      max-width: 480px;
+      margin: 0 auto;
+      padding: 24px 16px;
+      background: #f5f5f5;
+    }
+
+    h2 {
+      text-align: center;
+      color: #2c3e50;
+      margin-bottom: 24px;
+    }
+
+    label {
+      font-weight: 500;
+      display: block;
+      margin-top: 14px;
+      margin-bottom: 6px;
+      color: #333;
+    }
+
+    select, input[type="file"], button, .select2-container {
+      width: 100% !important;
+      font-size: 15px;
+      padding: 10px;
+      box-sizing: border-box;
+      border-radius: 6px;
+      border: 1px solid #ccc;
+      margin-bottom: 10px;
+      background: #fff;
+    }
+
+    .select2-container--default .select2-selection--single {
+      height: 42px !important;
+      display: flex !important;
+      align-items: center;
+      padding: 0 !important;
+      border: 1px solid #ccc;
+      border-radius: 6px;
+    }
+
+    .select2-selection__rendered {
+	  padding-left: 12px !important;
+	  padding-right: 36px !important;
+	  font-size: 15px !important;
+	  line-height: normal !important;
+	  height: 42px !important;
+	  display: flex !important;
+	  align-items: center;
+	  justify-content: flex-start !important;
+	}
+
+
+    .select2-selection__arrow {
+      height: 100%;
+      width: 36px;
+      right: 0;
+      top: 0;
+    }
+
+    #video, #preview {
+      width: 100%;
+      border-radius: 8px;
+      margin-top: 12px;
+      border: 1px solid #ccc;
+    }
+
+    button {
+      background-color: #27ae60;
+      color: white;
+      font-weight: bold;
+      border: none;
+      cursor: pointer;
+      margin-top: 12px;
+      transition: background 0.3s;
+    }
+
+    button:hover {
+      background-color: #219150;
+    }
+  </style>
+</head>
+<body>
+  <h2>QC – Ghi nhận kiểm tra</h2>
+
+  <form id="qcForm">
+    <label for="productSelect">Sản phẩm:</label>
+    <select id="productSelect" name="product_id" required></select>
+
+    <label for="machineSelect">Máy:</label>
+    <select id="machineSelect" name="machine_id" required></select>
+
+    <label for="userSelect">Nhân viên:</label>
+    <select id="userSelect" name="user_id" required></select>
+
+    <!-- CAMERA MOBILE -->
+    <div id="mobileCamera" style="display:none">
+      <label for="imageInput">Chụp ảnh (Mobile):</label>
+      <input type="file" accept="image/*" capture="environment" name="image" id="imageInput">
+    </div>
+
+    <!-- CAMERA DESKTOP -->
+    <div id="desktopCamera" style="display:none">
+      <label>Chụp ảnh (Desktop):</label>
+      <video id="video" autoplay></video>
+      <button type="button" id="snapBtn">📸 Chụp ảnh</button>
+      <canvas id="canvas" style="display:none;"></canvas>
+    </div>
+
+    <img id="preview" style="display:none" />
+    <button type="submit">✔ Hoàn thành</button>
+  </form>
+
+  <script>
+    const isMobile = /iPhone|iPad|Android/i.test(navigator.userAgent);
+
+    const video = document.getElementById("video");
+    const canvas = document.getElementById("canvas");
+    const preview = document.getElementById("preview");
+    const snapBtn = document.getElementById("snapBtn");
+    const imageInput = document.getElementById("imageInput");
+
+    if (isMobile) {
+      document.getElementById("mobileCamera").style.display = "block";
+    } else {
+      document.getElementById("desktopCamera").style.display = "block";
+      navigator.mediaDevices.getUserMedia({ video: true })
+        .then(stream => video.srcObject = stream)
+        .catch(err => alert("Không thể truy cập camera: " + err.message));
+    }
+
+    imageInput?.addEventListener("change", function (e) {
+      const file = e.target.files[0];
+      if (file) {
+        preview.src = URL.createObjectURL(file);
+        preview.style.display = "block";
+      }
+    });
+
+    snapBtn?.addEventListener("click", () => {
+      canvas.width = video.videoWidth;
+      canvas.height = video.videoHeight;
+      canvas.getContext("2d").drawImage(video, 0, 0);
+      preview.src = canvas.toDataURL("image/jpeg");
+      preview.style.display = "block";
+    });
+
+    // Gửi form
+
+document.getElementById("qcForm").addEventListener("submit", async function (e) {
+  e.preventDefault();
+  const formData = new FormData(e.target);
+
+  // Kiểm tra ảnh trên PC nếu không dùng input file
+  if (!isMobile && preview.src === "") {
+    alert("❌ Bạn chưa chụp ảnh.");
+    return;
+  }
+
+  // Nếu dùng camera máy tính, lấy ảnh từ canvas
+  if (!isMobile) {
+    await new Promise((resolve, reject) => {
+      canvas.toBlob(blob => {
+        if (blob) {
+          formData.append("image", blob, "photo.jpg");
+          resolve();
+        } else {
+          alert("❌ Không thể chụp ảnh từ webcam.");
+          reject();
+        }
+      }, "image/jpeg");
+    });
+  }
+
+  // Gửi
+  const res = await fetch("/qc/check", {
+    method: "POST",
+    body: formData
+  });
+
+  const result = await res.json();
+  alert(result.status === "success" ? "✔ Ghi nhận thành công!" : "❌ Có lỗi xảy ra!");
+});
+
+
+
+
+
+
+    async function loadDropdownData() {
+      const [products, machines, users] = await Promise.all([
+        fetch("/products").then(res => res.json()),
+        fetch("/machines").then(res => res.json()),
+        fetch("/users").then(res => res.json())
+      ]);
+
+      const productSelect = document.getElementById("productSelect");
+      products.forEach(p => {
+        const option = document.createElement("option");
+        option.value = p.id;
+        option.textContent = p.name;
+        productSelect.appendChild(option);
+      });
+
+      const machineSelect = document.getElementById("machineSelect");
+      machines.forEach(m => {
+        const option = document.createElement("option");
+        option.value = m.id;
+        option.textContent = m.name;
+        machineSelect.appendChild(option);
+      });
+
+      const userSelect = document.getElementById("userSelect");
+      users.forEach(u => {
+        const option = document.createElement("option");
+        option.value = u.id;
+        option.textContent = u.name;
+        userSelect.appendChild(option);
+      });
+
+      ['productSelect', 'machineSelect', 'userSelect'].forEach(id => {
+        $(`#${id}`).select2({
+          placeholder: "Chọn...",
+          allowClear: true
+        });
+      });
+    }
+
+    document.addEventListener("DOMContentLoaded", loadDropdownData);
+  </script>
+</body>
+</html>
