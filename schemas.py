@@ -16,3 +16,7 @@ class ProductCreate(BaseModel):
 
 class MachineCreate(BaseModel):
     name: str
+
+class UserCreate(BaseModel):
+    name: str
+    password: str
