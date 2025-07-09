@@ -3,7 +3,7 @@ from fastapi.responses import PlainTextResponse
 from sqlalchemy.orm import Session
 from database import get_db
 from models import QCCheck, User, Product, Machine
-from schemas import QCCheckDisplay
+from schemas import QCCheckDisplay, ProductCreate, MachineCreate, UserCreate
 from datetime import datetime, timedelta
 from pytz import timezone
 from typing import Optional
