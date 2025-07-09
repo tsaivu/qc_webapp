@@ -11,3 +11,8 @@ class QCCheckDisplay(BaseModel):
 
     class Config:
         from_attributes = True
+class ProductCreate(BaseModel):
+    name: str
+
+class MachineCreate(BaseModel):
+    name: str
